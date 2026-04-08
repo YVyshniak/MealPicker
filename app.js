@@ -12,18 +12,53 @@ const logos = [
     'salateria.png',
     'shashlik.png'
 ];
+const fastfoodLogos = new Set([
+  'dominos.png',
+  'kfc.png',
+  'lviv.png',
+  'mac.png',
+]);
 
 const containers = Array.from(document.querySelectorAll('.slot'));
+const excludeFastfoodBtn = document.getElementById('excludeFastfoodBtn');
+const onlyFastfoodBtn = document.getElementById('onlyFastfoodBtn');
 const SLOT_STEP_PX = 110;
 const LOOPS = 2;
 const SPIN_DURATION_MS = 3000;
 const SETTLE_DURATION_MS = 500;
 let isSpinning = false;
+let filterMode = 'all'; // all | excludeFastfood | onlyFastfood
+
+function getActiveLogos() {
+  let filtered;
+  if (filterMode === 'excludeFastfood') {
+    filtered = logos.filter((logo) => !fastfoodLogos.has(logo));
+  } else if (filterMode === 'onlyFastfood') {
+    filtered = logos.filter((logo) => fastfoodLogos.has(logo));
+  } else {
+    filtered = logos.slice();
+  }
+  return filtered.length ? filtered : logos.slice();
+}
+
+function updateFilterButtons() {
+  if (excludeFastfoodBtn) {
+    excludeFastfoodBtn.classList.toggle('active', filterMode === 'excludeFastfood');
+  }
+  if (onlyFastfoodBtn) {
+    onlyFastfoodBtn.classList.toggle('active', filterMode === 'onlyFastfood');
+  }
+}
+
+function refreshAllWheels() {
+  const active = getActiveLogos();
+  containers.forEach((c) => createItems(c, active));
+}
 
 function createItems(container, options) {
   container.innerHTML = '';
 
-  const safeOptions = options && options.length ? options : logos;
+  const safeOptions = options && options.length ? options : getActiveLogos();
 
   // duplicate many times for long scroll
   for (let i = 0; i < 50; i++) {
@@ -33,18 +68,18 @@ function createItems(container, options) {
   }
 }
 
-function spinWheel(container, selectedLogo) {
+function spinWheel(container, selectedLogo, activeLogos) {
   return new Promise((resolve) => {
     // Keep full logo set in the reel visuals; we only narrow the selection.
-    createItems(container, logos);
+    createItems(container, activeLogos);
 
     container.classList.add('spinning');
 
-    const selectedIndex = logos.indexOf(selectedLogo);
+    const selectedIndex = activeLogos.indexOf(selectedLogo);
     // Safety fallback: if something went wrong, just use index 0.
     const safeSelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
-    const finalIndex = LOOPS * logos.length + safeSelectedIndex;
+    const finalIndex = LOOPS * activeLogos.length + safeSelectedIndex;
     const offset = finalIndex * SLOT_STEP_PX;
 
     // reset animation state
@@ -83,9 +118,10 @@ function spin() {
   if (!containers.length) return;
   if (isSpinning) return; // ignore repeated clicks until the whole sequence ends
   isSpinning = true;
+  const activeLogos = getActiveLogos();
 
   const results = new Array(containers.length);
-  const N = logos.length;
+  const N = activeLogos.length;
   const wheel2TargetSize = Math.max(1, Math.ceil(N / 2));
   const wheel3TargetSize = Math.max(1, Math.ceil(wheel2TargetSize / 2));
   const wheelTargetSizes = [N, wheel2TargetSize, wheel3TargetSize];
@@ -104,7 +140,7 @@ function spin() {
     // - wheel 1 (index 0): N
     // - wheel 2 (index 1): ceil(N/2)
     // - wheel 3 (index 2): ceil(wheel2TargetSize/2)
-    const targetSize = Math.min(logos.length, wheelTargetSizes[index] || logos.length);
+    const targetSize = Math.min(activeLogos.length, wheelTargetSizes[index] || activeLogos.length);
 
     // Always keep already-picked logo(s) inside the choice set.
     // If wheel 1 and wheel 2 picked the same logo, then fixed forced size is 1 (not 2).
@@ -117,12 +153,12 @@ function spin() {
     let narrowedOptions;
     if (index === 2) {
       narrowedOptions = Array.from(fixedSet);
-      if (narrowedOptions.length === 0) narrowedOptions = logos;
+      if (narrowedOptions.length === 0) narrowedOptions = activeLogos;
     } else if (fixedSet.size >= targetSize) {
       narrowedOptions = Array.from(fixedSet);
     } else {
       const needed = targetSize - fixedSet.size;
-      const remainingCandidates = logos.filter((logo) => !fixedSet.has(logo));
+      const remainingCandidates = activeLogos.filter((logo) => !fixedSet.has(logo));
 
       // Pick "needed" additional unique candidates without replacement.
       const additional = [];
@@ -137,7 +173,7 @@ function spin() {
 
     const picked = narrowedOptions[Math.floor(Math.random() * narrowedOptions.length)];
 
-    spinWheel(containers[index], picked).then((result) => {
+    spinWheel(containers[index], picked, activeLogos).then((result) => {
       results[index] = result;
       spinOne(index + 1);
     });
@@ -177,7 +213,26 @@ function sendResult(results) {
   }
 }
 
-containers.forEach((c) => createItems(c, logos));
+updateFilterButtons();
+refreshAllWheels();
+
+if (excludeFastfoodBtn) {
+  excludeFastfoodBtn.addEventListener('click', () => {
+    if (isSpinning) return;
+    filterMode = filterMode === 'excludeFastfood' ? 'all' : 'excludeFastfood';
+    updateFilterButtons();
+    refreshAllWheels();
+  });
+}
+
+if (onlyFastfoodBtn) {
+  onlyFastfoodBtn.addEventListener('click', () => {
+    if (isSpinning) return;
+    filterMode = filterMode === 'onlyFastfood' ? 'all' : 'onlyFastfood';
+    updateFilterButtons();
+    refreshAllWheels();
+  });
+}
 
 document.addEventListener('keydown', (event) => {
   if (event.code === 'Space') {
