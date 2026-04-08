@@ -33,58 +33,6 @@ function createItems(container, options) {
   }
 }
 
-// function spin() {
-//  const totalItems = container.children.length;
-
-//  const randomIndex = Math.floor(Math.random() * logos.length);
-
-//  // додаємо кілька повних прокруток
-//  const loops = 2;
-//  const finalIndex = loops * logos.length + randomIndex;
-
-//  const offset = finalIndex * 110;
-
-//  // кастомний easing як у слотів
-//  container.style.transition = 'transform 3s cubic-bezier(0.15, 0.85, 0.35, 1)';
-//  container.style.transform = `translateY(-${offset}px)`;
-
-//  setTimeout(() => {
-//    const result = logos[randomIndex];
-//    sendResult(result);
-//  }, 3000);
-// }
-
-// function spin() {
-
-//   container.innerHTML = '';
-
-//   // дублюємо багато разів для довгого скролу
-//   for (let i = 0; i < 50; i++) {
-//     const img = document.createElement('img');
-//     img.src = 'assets/' + logos[i % logos.length];
-//     container.appendChild(img);
-//   }
-  
-//   container.classList.add('spinning');
-
-//   const randomIndex = Math.floor(Math.random() * logos.length);
-//   const loops = 2;
-//   const finalIndex = loops * logos.length + randomIndex;
-
-//   const offset = finalIndex * 110;
-
-//   container.style.transition = 'transform 3s cubic-bezier(0.15, 0.85, 0.35, 1)';
-//   container.style.transform = `translateY(-${offset}px)`;
-
-//   setTimeout(() => {
-//    
-
-//     const result = logos[randomIndex];
-
-//     sendResult(result);
-//   }, 3000);
-// }
-
 function spinWheel(container, selectedLogo) {
   return new Promise((resolve) => {
     // Keep full logo set in the reel visuals; we only narrow the selection.
@@ -216,6 +164,13 @@ function sendResult(results) {
 }
 
 containers.forEach((c) => createItems(c, logos));
+
+document.addEventListener('keydown', (event) => {
+  if (event.code === 'Space') {
+    event.preventDefault();
+    spin();
+  }
+});
 
 
 
