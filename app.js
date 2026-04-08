@@ -153,6 +153,20 @@ function sendResult(results) {
     results: safeResults,
   };
 
+  const isJackpot =
+    safeResults.length >= 3 &&
+    safeResults.every((logo) => logo === safeResults[0]);
+
+  if (isJackpot) {
+    document.body.classList.remove('jackpot');
+    // Restart animation on repeated jackpots.
+    void document.body.offsetWidth;
+    document.body.classList.add('jackpot');
+    setTimeout(() => {
+      document.body.classList.remove('jackpot');
+    }, 1800);
+  }
+
   const resultEl = document.getElementById('result');
   if (resultEl) {
     resultEl.textContent = safeResults.join(', ');
